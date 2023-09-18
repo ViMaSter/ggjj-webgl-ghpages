@@ -1,0 +1,40 @@
+# github action
+# download all artifacts from last Studio-Lovelies/GG-JointJustice-Unity run
+name: Deploy to GitHub Pages
+on:
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download all artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GHTOKEN }}
+          workflow: build_and_test.yml
+          workflow_conclusion: success
+          branch: develop
+          event: push
+          name: WebGL
+          name_is_regexp: true
+          repo: Studio-Lovelies/GG-JointJustice-Unity
+          path: Build
+      - run: ls -la
+      # checkout repository to "repo" folder and extract "Build" to root
+      - uses: actions/checkout@v2
+        with:
+          path: repo
+      - run: mv repo/Build/* .
+      - run: ls -la
+      - name: unzip
+        run: unzip -l Build.zip
+      - name: Commit files
+        run: |
+          git config --local user.email "gh-pages@example.org"
+          git config --local user.name "GitHub Pages"
+          git add .
+          git commit -m "Deploy to GitHub Pages"
+      - name: Push changes    
+        run: |
+          git push --force --quiet
