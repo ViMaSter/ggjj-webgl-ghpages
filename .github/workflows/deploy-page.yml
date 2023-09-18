@@ -1,0 +1,52 @@
+name: Deploy WebGL artifact to GitHub Pages
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Github Pages branch
+        uses: actions/checkout@v2
+        with:
+          path: repo
+          ref: gh-pages
+          token: ${{ secrets.GHTOKEN }}
+          
+      - name: Delete old deployment
+        run: |
+          mkdir git
+          cd repo
+          mv .git/* ../git
+          rm -rf *
+          mv ../git/* .git
+          cd ..
+
+      - name: Download new deployment
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GHTOKEN }}
+          workflow: build_and_test.yml
+          workflow_conclusion: success
+          branch: develop
+          event: push
+          name: WebGL
+          name_is_regexp: true
+          repo: Studio-Lovelies/GG-JointJustice-Unity
+          path: repo
+
+      - name: Commit and push files
+        run: |
+          mv repo/WebGL*/* repo/
+          mv repo/Game*/* repo/
+
+          # commit and push
+          cd repo
+          git config --local user.email "gh-pages@example.org"
+          git config --local user.name "GitHub Pages"
+          git add .
+          git commit -m "Deploy to GitHub Pages" || echo "No changes to commit"
+          git push || echo "No changes to push"
